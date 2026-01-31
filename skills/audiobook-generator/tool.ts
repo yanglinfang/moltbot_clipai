@@ -1,6 +1,6 @@
 import { Type } from "@sinclair/typebox";
 import type { AnyAgentTool } from "../../src/agents/tools/common.js";
-import { readStringParam, readBoolParam } from "../../src/agents/tools/common.js";
+import { readStringParam } from "../../src/agents/tools/common.js";
 import { loadConfig } from "../../src/config/config.js";
 import { textToSpeech } from "../../src/tts/tts.js";
 import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync } from "node:fs";
@@ -65,7 +65,7 @@ export function createAudiobookGeneratorTool(): AnyAgentTool {
       const voice = readStringParam(params, "voice");
       const provider = readStringParam(params, "provider");
       const chaptersStr = readStringParam(params, "chapters");
-      const uploadYoutube = readBoolParam(params, "uploadYoutube") ?? false;
+      const uploadYoutube = (params.uploadYoutube as boolean | undefined) ?? false;
       const youtubePlaylist = readStringParam(params, "youtubePlaylist");
       const maxChunkChars = (params.maxChunkChars as number | undefined) ?? 1500;
 
@@ -178,6 +178,11 @@ export function createAudiobookGeneratorTool(): AnyAgentTool {
 
             chapterAudioChunks.push(ttsResult.audioPath);
             results.push(`  ✅ Chunk ${i + 1} generated (${ttsResult.provider})`);
+
+            // Small delay to avoid rate limiting
+            if (i < chunks.length - 1) {
+              await new Promise((resolve) => setTimeout(resolve, 500));
+            }
           }
 
           // Concatenate chunks into chapter audio
