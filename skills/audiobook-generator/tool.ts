@@ -179,9 +179,9 @@ export function createAudiobookGeneratorTool(): AnyAgentTool {
             chapterAudioChunks.push(ttsResult.audioPath);
             results.push(`  ✅ Chunk ${i + 1} generated (${ttsResult.provider})`);
 
-            // Small delay to avoid rate limiting
+            // Delay to avoid rate limiting (Edge TTS may have limits)
             if (i < chunks.length - 1) {
-              await new Promise((resolve) => setTimeout(resolve, 500));
+              await new Promise((resolve) => setTimeout(resolve, 2000));
             }
           }
 
@@ -392,6 +392,10 @@ function processTextForTts(text: string): string {
   processed = processed.replace(/\be\.g\./gi, "for example");
   processed = processed.replace(/\bi\.e\./gi, "that is");
   processed = processed.replace(/\betc\./gi, "etcetera");
+
+  // Replace < and > symbols (they break Edge TTS)
+  processed = processed.replace(/</g, " less than ");
+  processed = processed.replace(/>/g, " greater than ");
 
   return processed.trim();
 }
