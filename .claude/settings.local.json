@@ -4,19 +4,10 @@
       "Bash(ffprobe:*)",
       "Bash(where:*)",
       "Bash(winget install:*)",
-      "Bash(FFMPEG=\"/c/Users/Lin/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.0.1-full_build/bin/ffmpeg.exe\")",
       "Bash(\"$FFMPEG\" -version)",
-      "Bash(\"/c/Users/Lin/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.0.1-full_build/bin/ffmpeg.exe\" -version)",
-      "Bash(\"/c/Users/Lin/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.0.1-full_build/bin/ffprobe.exe\" -v error -show_streams -select_streams v:0 \"skills/interview-prep/2025-02-01/research_engineer_audio.mp4\")",
-      "Bash(\"/c/Users/Lin/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.0.1-full_build/bin/ffprobe.exe\" -v error -show_streams \"skills/interview-prep/2025-02-01/research_engineer_audio.mp3\")",
-      "Bash(\"/c/Users/Lin/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.0.1-full_build/bin/ffprobe.exe\" -v error -show_streams \"skills/interview-prep/2025-02-01/research_engineer_audio.mp4\")",
-      "Bash(\"/c/Users/Lin/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.0.1-full_build/bin/ffprobe.exe\" -v error -show_streams -select_streams a:0 \"skills/interview-prep/2025-02-01/research_engineer_audio.mp4\")",
-      "Bash(start \"\" \"skills/interview-prep/2025-02-01/research_engineer_audio.mp3\")",
       "Bash(pip show:*)",
       "Bash(pip install:*)",
       "Bash(edge-tts:*)",
-      "Bash(\"$FFMPEG\" -f lavfi -i \"color=c=black:s=1280x720:r=30\" -i \"skills/interview-prep/2025-02-01/research_engineer_audio.mp3\" -shortest -c:v libx264 -profile:v baseline -level 3.0 -c:a libmp3lame -b:a 128k -ar 44100 -ac 2 -pix_fmt yuv420p -movflags +faststart -y \"skills/interview-prep/2025-02-01/research_engineer_audio.mp4\")",
-      "Bash(\"/c/Users/Lin/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.0.1-full_build/bin/ffmpeg.exe\" -f lavfi -i \"color=c=black:s=1280x720:r=30\" -i \"skills/interview-prep/2025-02-01/research_engineer_audio.mp3\" -shortest -c:v libx264 -profile:v baseline -level 3.0 -c:a libmp3lame -b:a 128k -ar 44100 -ac 2 -pix_fmt yuv420p -movflags +faststart -y \"skills/interview-prep/2025-02-01/research_engineer_audio.mp4\")"
     ]
   }
 }
