@@ -219,6 +219,7 @@ function cleanTextForTts(text: string): string {
 /**
  * Convert audio (MP3) to MP4 with static black background
  * This creates a video file that WhatsApp can handle
+ * Uses encoding settings compatible with both Mac and Windows
  */
 async function convertAudioToMp4(
 	audioPath: string,
@@ -228,12 +229,18 @@ async function convertAudioToMp4(
 	// Using shortest filter to match video duration to audio duration
 	const ffmpegCmd = [
 		"ffmpeg",
-		'-f lavfi -i "color=c=black:s=1280x720"', // Black background 1280x720
+		'-f lavfi -i "color=c=black:s=1280x720:r=30"', // Black background 1280x720 at 30fps
 		`-i "${audioPath}"`, // Audio input
 		"-shortest", // Match shortest stream (audio)
 		"-c:v libx264", // H.264 video codec
-		"-c:a aac", // AAC audio codec
+		"-profile:v baseline", // Baseline profile for maximum compatibility
+		"-level 3.0", // Level 3.0 for broad device support
+		"-c:a libmp3lame", // MP3 audio codec (Windows native support, no codec needed)
+		"-b:a 128k", // Audio bitrate for quality/compatibility
+		"-ar 44100", // Standard sample rate
+		"-ac 2", // Stereo audio
 		"-pix_fmt yuv420p", // Pixel format for compatibility
+		"-movflags +faststart", // Move moov atom to start for streaming
 		"-y", // Overwrite output
 		`"${outputPath}"`,
 	].join(" ");
