@@ -69,5 +69,8 @@ IDENTITY.md
 USER.md
 .tgz
 
+# Local Claude settings
+.claude/
+
 # local tooling
 .serena/
