@@ -195,8 +195,14 @@ function applyBias(tier: ModelTierId, bias: RoutingBias): ModelTierId {
 }
 
 /**
- * Apply budget constraints — downgrade tier if spending limits are close.
- * Currently a placeholder; real implementation would track spend via analytics.
+ * Apply budget constraints — downgrade tier if spending limits are hit.
+ *
+ * - `preferFree`: always clamp to T1 (local models only)
+ * - `dailyCapUsd`: if cumulative daily spend exceeds cap, clamp to T1
+ * - `monthlyCapUsd`: if cumulative monthly spend exceeds cap, clamp to T1
+ *
+ * Spend tracking is provided via `currentSpend` on the budget config.
+ * The caller is responsible for computing these from the analytics log.
  */
 function applyBudgetConstraints(
   tier: ModelTierId,
@@ -205,13 +211,25 @@ function applyBudgetConstraints(
   const budget = routingConfig.budget;
   if (!budget) return tier;
 
-  // If preferFree is set, cap at T1 for anything that T1 can handle
+  // If preferFree is set, cap at T1 (local models only)
   if (budget.preferFree) {
     return clampTier(tier, "t1");
   }
 
-  // Budget cap enforcement would go here once we track cumulative spend.
-  // For now, trust the user's tier config.
+  // Daily cap enforcement
+  if (budget.dailyCapUsd != null && budget.currentSpend?.dailyUsd != null) {
+    if (budget.currentSpend.dailyUsd >= budget.dailyCapUsd) {
+      return clampTier(tier, "t1");
+    }
+  }
+
+  // Monthly cap enforcement
+  if (budget.monthlyCapUsd != null && budget.currentSpend?.monthlyUsd != null) {
+    if (budget.currentSpend.monthlyUsd >= budget.monthlyCapUsd) {
+      return clampTier(tier, "t1");
+    }
+  }
+
   return tier;
 }
 
@@ -249,6 +267,18 @@ function resolveModelForTier(
   return { provider: DEFAULT_PROVIDER, model: "claude-sonnet-4-5" };
 }
 
+/** Resolve the API endpoint for a provider from the config. */
+function resolveEndpoint(provider: string, cfg: MoltbotConfig): string | undefined {
+  const providerConfig = cfg.models?.providers?.[provider];
+  if (providerConfig && typeof providerConfig === "object" && "baseUrl" in providerConfig) {
+    return (providerConfig as { baseUrl: string }).baseUrl;
+  }
+  // Well-known defaults
+  if (provider === "anthropic") return "https://api.anthropic.com";
+  if (provider === "openai") return "https://api.openai.com";
+  return undefined;
+}
+
 /** Record an analytics event if the logger is available. */
 function recordAnalytics(params: RouterParams, decision: RoutingDecision): void {
   if (!params.analytics?.enabled) return;
@@ -269,12 +299,45 @@ function recordAnalytics(params: RouterParams, decision: RoutingDecision): void 
     originalTier: decision.tier !== decision.originalTier ? decision.originalTier : undefined,
     provider: decision.model.provider,
     model: decision.model.model,
+    endpoint: resolveEndpoint(decision.model.provider, params.cfg),
     sessionId: params.sessionId,
     channel: params.channel,
     messageLength: params.message.length,
     estimatedCostUsd,
     classifierReason: decision.classification.reason,
     promptAdapted: decision.adaptedPrompt.wasAdapted,
+  };
+
+  params.analytics.record(event);
+}
+
+/**
+ * Record a completion event with latency after the model call finishes.
+ * Call this from the agent pipeline after the LLM response is received.
+ */
+export function recordRoutingCompletion(params: {
+  analytics: RoutingAnalyticsLogger | null | undefined;
+  decision: RoutingDecision;
+  latencyMs: number;
+  responseSize?: number;
+  cfg: MoltbotConfig;
+}): void {
+  if (!params.analytics?.enabled) return;
+
+  const event: RoutingAnalyticsEvent = {
+    ts: new Date().toISOString(),
+    event: "complete",
+    intent: params.decision.classification.intent,
+    confidence: params.decision.classification.confidence,
+    tier: params.decision.tier,
+    provider: params.decision.model.provider,
+    model: params.decision.model.model,
+    endpoint: resolveEndpoint(params.decision.model.provider, params.cfg),
+    messageLength: 0,
+    latencyMs: params.latencyMs,
+    responseSize: params.responseSize,
+    estimatedCostUsd: null,
+    promptAdapted: params.decision.adaptedPrompt.wasAdapted,
   };
 
   params.analytics.record(event);

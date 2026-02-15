@@ -12,6 +12,7 @@ import type {
   TalkConfig,
 } from "./types.gateway.js";
 import type { HooksConfig } from "./types.hooks.js";
+import type { IntelligentRoutingConfig } from "./types.intelligent-routing.js";
 import type {
   AudioConfig,
   BroadcastConfig,
@@ -95,6 +96,7 @@ export type MoltbotConfig = {
   canvasHost?: CanvasHostConfig;
   talk?: TalkConfig;
   gateway?: GatewayConfig;
+  intelligentRouting?: IntelligentRoutingConfig;
 };
 
 export type ConfigValidationIssue = {

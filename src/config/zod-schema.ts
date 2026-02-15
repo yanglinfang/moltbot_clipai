@@ -527,6 +527,34 @@ export const MoltbotSchema = z
       })
       .strict()
       .optional(),
+    intelligentRouting: z
+      .object({
+        enabled: z.boolean().optional(),
+        bias: z.union([z.literal("cost"), z.literal("balanced"), z.literal("quality")]).optional(),
+        tiers: z
+          .record(
+            z.string(),
+            z
+              .object({
+                model: z.string(),
+                maxTokens: z.number().int().nonnegative().optional(),
+              })
+              .strict(),
+          )
+          .optional(),
+        budget: z
+          .object({
+            dailyCapUsd: z.number().nonnegative().optional(),
+            monthlyCapUsd: z.number().nonnegative().optional(),
+            preferFree: z.boolean().optional(),
+          })
+          .strict()
+          .optional(),
+        analytics: z.boolean().optional(),
+        analyticsPath: z.string().optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
   .superRefine((cfg, ctx) => {

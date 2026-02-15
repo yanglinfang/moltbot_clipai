@@ -37,6 +37,11 @@ export type RoutingBudgetConfig = {
   monthlyCapUsd?: number;
   /** Prefer free (local) models when available for a given complexity. */
   preferFree?: boolean;
+  /** Current spend totals, computed from analytics log at startup or periodically. */
+  currentSpend?: {
+    dailyUsd?: number;
+    monthlyUsd?: number;
+  };
 };
 
 /** Top-level intelligent routing configuration. */

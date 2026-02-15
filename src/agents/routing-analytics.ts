@@ -26,7 +26,7 @@ export type RoutingAnalyticsEvent = {
   /** ISO timestamp. */
   ts: string;
   /** Event type. */
-  event: "route" | "fallback" | "budget_downgrade" | "override";
+  event: "route" | "complete" | "fallback" | "budget_downgrade" | "override";
   /** Classified intent complexity. */
   intent: IntentComplexity;
   /** Classifier confidence (0–1). */
@@ -39,12 +39,18 @@ export type RoutingAnalyticsEvent = {
   provider: string;
   /** Resolved model ID. */
   model: string;
+  /** API endpoint being called (e.g. "http://host.docker.internal:11434/v1"). */
+  endpoint?: string;
   /** Session ID for grouping. */
   sessionId?: string;
   /** Channel the message came from. */
   channel?: string;
   /** Message length in characters. */
   messageLength: number;
+  /** Model call latency in milliseconds (populated on "complete" events). */
+  latencyMs?: number;
+  /** Response size in characters (populated on "complete" events). */
+  responseSize?: number;
   /** Estimated cost in USD for this request (null if local/free). */
   estimatedCostUsd: number | null;
   /** Classifier reason string. */

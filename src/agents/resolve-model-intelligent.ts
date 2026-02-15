@@ -34,6 +34,8 @@ export type IntelligentRoutingResult = {
   decision: RoutingDecision;
   /** Whether the caller should use the adapted system prompt. */
   useAdaptedPrompt: boolean;
+  /** Analytics logger instance (for recording completion events). */
+  analytics: RoutingAnalyticsLogger | null;
 };
 
 /**
@@ -89,6 +91,7 @@ export function resolveModelIntelligent(params: {
   return {
     decision,
     useAdaptedPrompt: decision.adaptedPrompt.wasAdapted,
+    analytics,
   };
 }
 
@@ -96,16 +99,9 @@ export function resolveModelIntelligent(params: {
 // Config resolution
 // ---------------------------------------------------------------------------
 
-/**
- * Extract the intelligent routing config from the main config.
- * The config lives at `cfg.intelligentRouting` (not yet wired into
- * the MoltbotConfig type — this is intentional for Phase 1 feature-flagging).
- */
+/** Extract the intelligent routing config from the main config. */
 function resolveRoutingConfig(cfg: MoltbotConfig): IntelligentRoutingConfig | null {
-  // Read from an untyped extension field. Phase 2 will add this to MoltbotConfig.
-  const raw = (cfg as Record<string, unknown>).intelligentRouting;
-  if (!raw || typeof raw !== "object") return null;
-  return raw as IntelligentRoutingConfig;
+  return cfg.intelligentRouting ?? null;
 }
 
 // ---------------------------------------------------------------------------

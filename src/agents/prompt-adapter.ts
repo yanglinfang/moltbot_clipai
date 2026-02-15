@@ -36,21 +36,25 @@ export type AdaptedPrompt = {
 // ---------------------------------------------------------------------------
 
 /**
- * Patterns matching system prompt sections that small models struggle with.
- * These get stripped for T1, kept for T2+.
+ * Known system prompt section headers to strip for small models.
+ * All entries are pre-normalized: lowercase, no trailing punctuation.
+ * The matching logic normalizes incoming headers the same way.
  */
-const STRIPPABLE_SECTION_PATTERNS: RegExp[] = [
-  // Tool usage instructions (local models rarely use tools)
-  /^##?\s*(?:Tools|Available Tools|Tool Usage)[\s\S]*?(?=^##?\s|$)/gm,
-  // Memory/workspace file instructions
-  /^##?\s*(?:Memory|Workspace Files|Every Session)[\s\S]*?(?=^##?\s|$)/gm,
-  // Heartbeat instructions
-  /^##?\s*(?:Heartbeats|💓)[\s\S]*?(?=^##?\s|$)/gm,
-  // Group chat instructions
-  /^##?\s*(?:Group Chats|💬)[\s\S]*?(?=^##?\s|$)/gm,
-  // Reaction instructions
-  /^##?\s*(?:React Like|😊)[\s\S]*?(?=^##?\s|$)/gm,
-];
+const STRIPPABLE_SECTION_HEADERS = new Set([
+  "tools",
+  "available tools",
+  "tool usage",
+  "memory",
+  "workspace files",
+  "every session",
+  "heartbeats",
+  "group chats",
+  "react like a human",
+  // Emoji-prefixed variants from AGENTS.md (emoji stripped during match)
+  "heartbeats - be proactive",
+  "know when to speak",
+  "react like a human",
+]);
 
 /**
  * Boilerplate phrases to strip for smaller models.
@@ -96,12 +100,8 @@ export function adaptPromptForTier(systemPrompt: string, tier: ModelTierId): Ada
 
 /** T1: Aggressive simplification for small local models. */
 function adaptForT1(systemPrompt: string): AdaptedPrompt {
-  let adapted = systemPrompt;
-
-  // Strip verbose sections that small models can't utilize
-  for (const pattern of STRIPPABLE_SECTION_PATTERNS) {
-    adapted = adapted.replace(pattern, "");
-  }
+  // Strip known sections by exact header match (avoids clobbering user content)
+  let adapted = stripSectionsByHeader(systemPrompt, STRIPPABLE_SECTION_HEADERS);
 
   // Strip boilerplate
   for (const pattern of BOILERPLATE_PHRASES) {
@@ -158,6 +158,45 @@ function adaptForT4(systemPrompt: string): AdaptedPrompt {
     tier: "t4",
     wasAdapted: true,
   };
+}
+
+/**
+ * Strip markdown sections whose header text matches a known set.
+ * Matching is case-insensitive and ignores leading emoji/punctuation.
+ * This avoids the regex approach that could accidentally clobber
+ * user-authored sections with similar names.
+ */
+function stripSectionsByHeader(prompt: string, headers: Set<string>): string {
+  const lines = prompt.split("\n");
+  const result: string[] = [];
+  let skipping = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const headerMatch = line.match(/^(#{1,3})\s+(.+)$/);
+
+    if (headerMatch) {
+      // Normalize: lowercase, strip leading emoji & trailing punctuation
+      const raw = headerMatch[2]
+        .toLowerCase()
+        .replace(/^[\p{Emoji}\p{Emoji_Presentation}\s]+/u, "")
+        .replace(/[!?.]+$/, "")
+        .trim();
+
+      if (headers.has(raw)) {
+        skipping = true;
+        continue;
+      }
+      // New section that isn't strippable — stop skipping
+      skipping = false;
+    }
+
+    if (!skipping) {
+      result.push(line);
+    }
+  }
+
+  return result.join("\n");
 }
 
 /**

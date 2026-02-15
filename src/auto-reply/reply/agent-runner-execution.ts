@@ -5,6 +5,8 @@ import { runCliAgent } from "../../agents/cli-runner.js";
 import { getCliSessionId } from "../../agents/cli-session.js";
 import { runWithModelFallback } from "../../agents/model-fallback.js";
 import { isCliProvider } from "../../agents/model-selection.js";
+import { resolveModelIntelligent } from "../../agents/resolve-model-intelligent.js";
+import { recordRoutingCompletion } from "../../agents/intelligent-router.js";
 import { runEmbeddedPiAgent } from "../../agents/pi-embedded.js";
 import {
   isCompactionFailureError,
@@ -134,10 +136,34 @@ export async function runAgentTurnWithFallback(params: {
       };
       const blockReplyPipeline = params.blockReplyPipeline;
       const onToolResult = params.opts?.onToolResult;
+
+      // Intelligent routing: classify intent and resolve model tier.
+      const activeEntry = params.getActiveSessionEntry();
+      const hasSessionModelOverride = Boolean(activeEntry?.modelOverride?.trim());
+      const routingResult = resolveModelIntelligent({
+        cfg: params.followupRun.run.config,
+        message: params.commandBody,
+        systemPrompt: "",
+        sessionModelOverride: hasSessionModelOverride
+          ? { provider: params.followupRun.run.provider, model: params.followupRun.run.model }
+          : undefined,
+        channel: params.sessionCtx.Provider?.trim().toLowerCase(),
+        sessionId: params.followupRun.run.sessionId,
+      });
+      const routedProvider =
+        routingResult && !routingResult.decision.bypassed
+          ? routingResult.decision.model.provider
+          : params.followupRun.run.provider;
+      const routedModel =
+        routingResult && !routingResult.decision.bypassed
+          ? routingResult.decision.model.model
+          : params.followupRun.run.model;
+
+      const routingStartMs = Date.now();
       const fallbackResult = await runWithModelFallback({
         cfg: params.followupRun.run.config,
-        provider: params.followupRun.run.provider,
-        model: params.followupRun.run.model,
+        provider: routedProvider,
+        model: routedModel,
         agentDir: params.followupRun.run.agentDir,
         fallbacksOverride: resolveAgentModelFallbacksOverride(
           params.followupRun.run.config,
@@ -421,6 +447,19 @@ export async function runAgentTurnWithFallback(params: {
       runResult = fallbackResult.result;
       fallbackProvider = fallbackResult.provider;
       fallbackModel = fallbackResult.model;
+
+      // Record routing completion with latency and response size for all paths
+      if (routingResult) {
+        const latencyMs = Date.now() - routingStartMs;
+        const responseText = runResult.payloads?.[0]?.text ?? "";
+        recordRoutingCompletion({
+          analytics: routingResult.analytics,
+          decision: routingResult.decision,
+          latencyMs,
+          responseSize: responseText.length,
+          cfg: params.followupRun.run.config,
+        });
+      }
 
       // Some embedded runs surface context overflow as an error payload instead of throwing.
       // Treat those as a session-level failure and auto-recover by starting a fresh session.
