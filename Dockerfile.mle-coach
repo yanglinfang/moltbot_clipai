@@ -1,0 +1,32 @@
+FROM node:22-bookworm
+
+# Install Bun (required for build scripts)
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:${PATH}"
+
+RUN corepack enable
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY ui/package.json ./ui/package.json
+COPY patches ./patches
+COPY scripts ./scripts
+
+RUN pnpm install --frozen-lockfile
+
+COPY . .
+
+# Remove skills/ (outside rootDir, has type errors) and patch the import
+RUN rm -rf skills/ \
+ && sed -i '/skills\/interview-prep/d' src/agents/moltbot-tools.ts \
+ && sed -i 's/createInterviewPrepTool(),//' src/agents/moltbot-tools.ts
+
+RUN CLAWDBOT_A2UI_SKIP_MISSING=1 pnpm build
+ENV CLAWDBOT_PREFER_PNPM=1
+RUN pnpm ui:install
+RUN pnpm ui:build
+
+ENV NODE_ENV=production
+USER node
+CMD ["node", "dist/index.js"]
