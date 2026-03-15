@@ -18,7 +18,6 @@ import { createSessionsSendTool } from "./tools/sessions-send-tool.js";
 import { createSessionsSpawnTool } from "./tools/sessions-spawn-tool.js";
 import { createWebFetchTool, createWebSearchTool } from "./tools/web-tools.js";
 import { createTtsTool } from "./tools/tts-tool.js";
-import { createInterviewPrepTool } from "../../skills/interview-prep/index.js";
 
 export function createMoltbotTools(options?: {
   sandboxBrowserBridgeUrl?: string;
@@ -98,7 +97,6 @@ export function createMoltbotTools(options?: {
       agentChannel: options?.agentChannel,
       config: options?.config,
     }),
-    createInterviewPrepTool(),
     createGatewayTool({
       agentSessionKey: options?.agentSessionKey,
       config: options?.config,
